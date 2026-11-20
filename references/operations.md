@@ -49,7 +49,7 @@ Agent → `SKILL.md` 选择命令 → argparse 校验 → 生成 SQL/参数列�
 
 ## 真实集群验收
 
-状态：**本提交未执行**。需要一个获准修改的独立课程测试集群及已安装的 OpenTenBase 客户端。
+状态：2026-11-20 在本地课程实验集群补做，结果见 [local-lab.md](local-lab.md)。以下为可复验流程；启停实际使用 opentenbase_ctl 后端，pgxc_ctl 未做真实集群验收。
 
 1. 配置 CN 的 PGHOST/PGPORT/PGDATABASE/PGUSER。运行 doctor、status、nodes、roles，确认 server version、数据库及 CN/DN 拓扑。
 2. 在现有数据库连接上，对一个未存在的专用数据库先运行 database-create 计划，再执行 --apply；用 psql `\l` 验证。
@@ -61,4 +61,4 @@ Agent → `SKILL.md` 选择命令 → argparse 校验 → 生成 SQL/参数列�
 
 ## 测试映射
 
-`tests/test_ops.py` 的 11 项测试覆盖：五类计划零副作用、标识符引号、非法/重复列、非法 shard key、类型注入、参数边界、三类查询、错误 JSON、错误退出码、超时、密钥输出约束、apply 单次执行、日志边界、集群路径与状态语义、真实 CLI 及客户端替身进程。
+`tests/test_ops.py` 的 12 项测试覆盖：五类计划零副作用、标识符引号、非法/重复列、非法 shard key、类型注入、参数边界、三类查询、错误 JSON、错误退出码、超时、密钥输出约束、apply 单次执行、日志边界、集群路径与状态语义、真实 CLI 及客户端替身进程。

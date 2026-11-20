@@ -27,3 +27,5 @@ Useful mappings:
 Global options (`--timeout`, `--psql`, `--pgxc-ctl`) precede the subcommand. Only use trusted native executable paths and configuration files; `pgxc_ctl` configuration can execute shell code. Log/monitor output can contain operational data: summarize only what the user needs, and do not publish raw output without authorization.
 
 For installation and runnable examples read [README.md](README.md). For output schema, source mapping, error diagnosis and live acceptance steps read [references/operations.md](references/operations.md). The recorded local demonstration is [examples/demo-record.json](examples/demo-record.json); it explicitly marks execution versus planning and is not evidence of a live cluster deployment.
+
+已有集群若由 `opentenbase_ctl` 管理，使用 `cluster monitor|start|stop --controller opentenbase_ctl --config <INI>`；不需要 `--home`。不要混用两种管理器的配置格式。真实集群验证见 [references/local-lab.md](references/local-lab.md)。

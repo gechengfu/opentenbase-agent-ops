@@ -98,10 +98,22 @@ python3 scripts/demo.py
 
 测试包含真实 CLI 子进程、可执行客户端替身，以及原生命令层的单元测试；客户端替身不是真实数据库。演示实际运行了本地检查、计划生成、日志读取和参数错误处理。`demo-record.json` 记录命令、输出、退出码及验证类型。
 
-当前提交没有运行真实 OpenTenBase 集群的 DDL、权限或启停验收。提供了完整的[集群验收清单](references/operations.md#真实集群验收)，以便在课程实验环境补跑。不能把模拟测试通过视作数据库部署成功。
+2026-11-20 已在免费本地 Lima ARM64 Linux 虚拟机、两个 Docker 容器中的 OpenTenBase 集群补做真实验收。记录见 [live-demo.json](examples/live-demo.json) 和 [本地集群说明](references/local-lab.md)。初版的 demo-record.json 保留为纯本地模拟/计划演示历史记录。真实启停使用 opentenbase_ctl；pgxc_ctl 后端仍仅有单元测试。
 
 ## AI 使用与原创工作
 
 本作业由 `gechengfu` 使用 Codex 辅助进行方案设计、编码、测试、文档和提交。测试输出由实际执行生成；未执行的集群验收明确标注。提交者应理解代码并能解释 JSON 协议、标识符转义、执行计划和测试边界，按课程要求披露 AI 使用。
 
 MIT License。未复制 OpenTenBase 服务端实现；源接口对应关系见参考文档。
+
+## OpenTenBase 原生管理器
+
+已有集群由 opentenbase_ctl 管理时，不要将 INI 配置交给 pgxc_ctl：
+
+```sh
+otb-ops cluster monitor --controller opentenbase_ctl --config /path/to/opentenbase_config.ini
+otb-ops --timeout 120 cluster stop --controller opentenbase_ctl --config /path/to/opentenbase_config.ini --apply
+otb-ops --timeout 120 cluster start --controller opentenbase_ctl --config /path/to/opentenbase_config.ini --apply
+```
+
+该后端把 monitor 映射为原生 status，无需 --home。可通过全局 --opentenbase-ctl 指定可执行文件。

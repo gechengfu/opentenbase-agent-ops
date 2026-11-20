@@ -1,12 +1,13 @@
 Validation date: 2026-11-20 (Asia/Shanghai)
 Account: gechengfu
 
-1. Python unittest: 11 test methods passed; see test-results.txt.
+1. Python unittest: 12 test methods passed; see test-results.txt.
 2. Seven local CLI demonstration invocations completed with expected exit codes; see demo-record.json.
 3. Installed package into a clean temporary venv with pip; installed otb-ops --version returned 1.0.0.
 4. Skill quick_validate.py: Skill is valid!
 5. git diff --check: passed before commit.
 
 The psql process test uses an explicitly identified executable fixture.
-No OpenTenBase server was available for native SQL/cluster lifecycle integration testing.
-Live acceptance procedures are supplied in references/operations.md and remain unexecuted.
+Update: real OpenTenBase V5.21 local cluster tested on 2026-11-20.
+See live-demo.json and references/local-lab.md for SQL, grants, logs, stop/start and persistence results.
+Native pgxc_ctl backend remains unit-tested only; live lifecycle used opentenbase_ctl.

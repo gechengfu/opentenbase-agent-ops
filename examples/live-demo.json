@@ -1,0 +1,370 @@
+{
+  "date": "2026-11-20T13:33:21.962460+00:00",
+  "environment": "Existing local Lima ARM64 Linux VM; 4 vCPU, 8 GiB RAM; two Docker containers; no cloud resources",
+  "live_database_tested": true,
+  "steps": [
+    {
+      "database": "postgres",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "status"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"status\", \"mode\": \"read\", \"data\": {\"rows\": [{\"database\": \"postgres\", \"username\": \"opentenbase\", \"version\": \"PostgreSQL 10.0 @ OpenTenBase_v5.0 OpenTenBase V5.21 2026-10-11 14:21:51 on aarch64-unknown-linux-gnu, compiled by gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0, 64-bit\", \"in_recovery\": false}]}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "postgres",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "nodes"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"nodes\", \"mode\": \"read\", \"data\": {\"rows\": [{\"node_name\": \"cn0001\", \"node_type\": \"C\", \"node_host\": \"10.206.0.101\", \"node_port\": 11003}, {\"node_name\": \"dn0001\", \"node_type\": \"D\", \"node_host\": \"10.206.0.101\", \"node_port\": 11006}, {\"node_name\": \"dn0002\", \"node_type\": \"D\", \"node_host\": \"10.206.0.102\", \"node_port\": 11006}, {\"node_name\": \"gtm0001\", \"node_type\": \"G\", \"node_host\": \"10.206.0.101\", \"node_port\": 11000}]}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "postgres",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "database-create",
+        "--name",
+        "skill_lab_20261120",
+        "--apply"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"database-create\", \"mode\": \"apply\", \"data\": {\"executed\": true}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "skill_lab_20261120",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "table-create",
+        "--name",
+        "events",
+        "--column",
+        "id:bigint",
+        "--column",
+        "payload:text",
+        "--shard-key",
+        "id",
+        "--apply"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"table-create\", \"mode\": \"apply\", \"data\": {\"executed\": true}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "skill_lab_20261120",
+      "argv": [
+        "psql",
+        "-X",
+        "-w",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-A",
+        "-t",
+        "-c",
+        "INSERT INTO events VALUES (1,'live OpenTenBase'),(2,'agent skill'); SELECT * FROM events ORDER BY id; SELECT pcrelid::regclass, pclocatortype FROM pgxc_class WHERE pcrelid='events'::regclass;"
+      ],
+      "exit_code": 0,
+      "stdout": "events|S\n",
+      "stderr": ""
+    },
+    {
+      "database": "skill_lab_20261120",
+      "argv": [
+        "psql",
+        "-X",
+        "-w",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-A",
+        "-t",
+        "-c",
+        "CREATE ROLE skill_reader_20261120 LOGIN; GRANT CONNECT ON DATABASE skill_lab_20261120 TO skill_reader_20261120; GRANT USAGE ON SCHEMA public TO skill_reader_20261120;"
+      ],
+      "exit_code": 0,
+      "stdout": "GRANT\n",
+      "stderr": ""
+    },
+    {
+      "database": "skill_lab_20261120",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "grant-select",
+        "--table",
+        "events",
+        "--role",
+        "skill_reader_20261120",
+        "--apply"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"grant-select\", \"mode\": \"apply\", \"data\": {\"executed\": true}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "skill_lab_20261120",
+      "argv": [
+        "psql",
+        "-X",
+        "-w",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-A",
+        "-t",
+        "-c",
+        "SET ROLE skill_reader_20261120; SELECT count(*) FROM events;"
+      ],
+      "exit_code": 0,
+      "stdout": "2\n",
+      "stderr": ""
+    },
+    {
+      "database": "skill_lab_20261120",
+      "argv": [
+        "psql",
+        "-X",
+        "-w",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-A",
+        "-t",
+        "-c",
+        "SET ROLE skill_reader_20261120; INSERT INTO events VALUES(3,'should fail');"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "ERROR:  (42501) permission denied for relation events\n"
+    },
+    {
+      "database": "skill_lab_20261120",
+      "argv": [
+        "psql",
+        "-X",
+        "-w",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-A",
+        "-t",
+        "-c",
+        "SELECT * FROM events ORDER BY id;"
+      ],
+      "exit_code": 0,
+      "stdout": "1|live OpenTenBase\n2|agent skill\n",
+      "stderr": ""
+    },
+    {
+      "database": "postgres",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "logs",
+        "--file",
+        "/data/opentenbase/run/instance/opentenbase01/cn0001/data/pg_ctl_start.log",
+        "--lines",
+        "5"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"logs\", \"mode\": \"read\", \"data\": {\"lines\": [\"2026-11-20 21:31:43.233 CST     724,coord(724,0) 0LOG:  add_size details: current[9048] + additional[148], location: auditlogger.c:933\", \"2026-11-20 21:31:43.233 CST     724,coord(724,0) 0LOG:  add_size details: current[74012724] + additional[9196], location: auditlogger.c:1015\", \"read file pgxz_license/license.info failed, please ensure license file has been imported.\", \"2026-11-20 21:31:43.465 CST     724,coord(724,0) 0LOG:  redirecting log output to logging collector process\", \"2026-11-20 21:31:43.465 CST     724,coord(724,0) 0HINT:  Future log output will appear in directory \\\"pg_log\\\".\"], \"window_truncated\": false, \"max_bytes\": 1048576}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "postgres",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "cluster",
+        "--controller",
+        "opentenbase_ctl",
+        "--config",
+        "/data/opentenbase/opentenbase_ctl/opentenbase_config.ini",
+        "monitor"
+      ],
+      "exit_code": 1,
+      "stdout": "{\"ok\": false, \"command\": \"cluster\", \"mode\": null, \"data\": null, \"error\": {\"code\": \"OPERATION_FAILED\", \"message\": \"Operation timed out; a timed-out mutation may have completed. Inspect state before retrying\"}}\n",
+      "stderr": ""
+    },
+    {
+      "database": "skill_lab_20261120",
+      "argv": [
+        "psql",
+        "-X",
+        "-w",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-A",
+        "-t",
+        "-c",
+        "SELECT * FROM events ORDER BY id;"
+      ],
+      "exit_code": 0,
+      "stdout": "1|live OpenTenBase\n2|agent skill\n",
+      "stderr": ""
+    },
+    {
+      "database": "postgres",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "--timeout",
+        "120",
+        "logs",
+        "--file",
+        "/data/opentenbase/run/instance/opentenbase01/cn0001/data/pg_ctl_start.log",
+        "--lines",
+        "5"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"logs\", \"mode\": \"read\", \"data\": {\"lines\": [\"2026-11-20 21:31:43.233 CST     724,coord(724,0) 0LOG:  add_size details: current[9048] + additional[148], location: auditlogger.c:933\", \"2026-11-20 21:31:43.233 CST     724,coord(724,0) 0LOG:  add_size details: current[74012724] + additional[9196], location: auditlogger.c:1015\", \"read file pgxz_license/license.info failed, please ensure license file has been imported.\", \"2026-11-20 21:31:43.465 CST     724,coord(724,0) 0LOG:  redirecting log output to logging collector process\", \"2026-11-20 21:31:43.465 CST     724,coord(724,0) 0HINT:  Future log output will appear in directory \\\"pg_log\\\".\"], \"window_truncated\": false, \"max_bytes\": 1048576}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "postgres",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "--timeout",
+        "120",
+        "cluster",
+        "--controller",
+        "opentenbase_ctl",
+        "--config",
+        "/data/opentenbase/opentenbase_ctl/opentenbase_config.ini",
+        "monitor"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"cluster\", \"mode\": \"read\", \"data\": {\"output\": \"\\n ------------- Instance status -----------  \\nInstance name: opentenbase01\\nVersion: v5.21.8\\n\\n -------------- Node status --------------  \\nNode dn0001(10.206.0.102:11009) is Running \\nNode gtm0002(10.206.0.102:11000) is Running \\nNode cn0001(10.206.0.102:11003) is Running \\nNode dn0001(10.206.0.101:11006) is Running \\nNode gtm0001(10.206.0.101:11000) is Running \\nNode dn0002(10.206.0.101:11009) is Running \\nNode cn0001(10.206.0.101:11003) is Running \\nNode dn0002(10.206.0.102:11006) is Running \\n[Result] Total: 8, Running: 8, Stopped: 0, Unknown: 0\\n\\n ------- Master CN Connection Info -------  \\n[1] cn0001(10.206.0.101)  \\nEnvironment variable: export LD_LIBRARY_PATH=/data/opentenbase/install/opentenbase/5.21.8/lib  && export PATH=/data/opentenbase/install/opentenbase/5.21.8/bin:${PATH} \\nPSQL connection: psql -h 10.206.0.101 -p 11003 -U opentenbase postgres\\n\\n\", \"health_verified\": false, \"note\": \"Command exit status alone does not prove cluster health; inspect monitor output and nodes/status\"}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "postgres",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "--timeout",
+        "120",
+        "--timeout",
+        "120",
+        "cluster",
+        "--controller",
+        "opentenbase_ctl",
+        "--config",
+        "/data/opentenbase/opentenbase_ctl/opentenbase_config.ini",
+        "stop",
+        "--apply"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"cluster\", \"mode\": \"apply\", \"data\": {\"output\": \"\\nStart executing stop node... \\n\\nStop node cn0001(10.206.0.102) Success \\nStop node dn0002(10.206.0.101) Success \\nStop node dn0002(10.206.0.102) Success \\nStop node dn0001(10.206.0.102) Success \\nStop node dn0001(10.206.0.101) Success \\nStop node cn0001(10.206.0.101) Success \\nStop node gtm0002(10.206.0.102) Success \\nStop node gtm0001(10.206.0.101) Success \\n\\n[Result] Total: 8, Success: 8, Failed: 0\\n\\n\", \"health_verified\": false, \"note\": \"Command exit status alone does not prove cluster health; inspect monitor output and nodes/status\"}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "postgres",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "--timeout",
+        "120",
+        "cluster",
+        "--controller",
+        "opentenbase_ctl",
+        "--config",
+        "/data/opentenbase/opentenbase_ctl/opentenbase_config.ini",
+        "monitor"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"cluster\", \"mode\": \"read\", \"data\": {\"output\": \"\\n ------------- Instance status -----------  \\nInstance name: opentenbase01\\nVersion: v5.21.8\\n\\n -------------- Node status --------------  \\nNode dn0001(10.206.0.102:11009) is Stopped \\nNode cn0001(10.206.0.102:11003) is Stopped \\nNode gtm0002(10.206.0.102:11000) is Stopped \\nNode dn0002(10.206.0.101:11009) is Stopped \\nNode dn0002(10.206.0.102:11006) is Stopped \\nNode gtm0001(10.206.0.101:11000) is Stopped \\nNode dn0001(10.206.0.101:11006) is Stopped \\nNode cn0001(10.206.0.101:11003) is Stopped \\n[Result] Total: 8, Running: 0, Stopped: 8, Unknown: 0\\n\\n ------- Master CN Connection Info -------  \\n[1] cn0001(10.206.0.101)  \\nEnvironment variable: export LD_LIBRARY_PATH=/data/opentenbase/install/opentenbase/5.21.8/lib  && export PATH=/data/opentenbase/install/opentenbase/5.21.8/bin:${PATH} \\nPSQL connection: psql -h 10.206.0.101 -p 11003 -U opentenbase postgres\\n\\n\", \"health_verified\": false, \"note\": \"Command exit status alone does not prove cluster health; inspect monitor output and nodes/status\"}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "postgres",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "--timeout",
+        "120",
+        "--timeout",
+        "5",
+        "status"
+      ],
+      "exit_code": 1,
+      "stdout": "{\"ok\": false, \"command\": \"status\", \"mode\": null, \"data\": null, \"error\": {\"code\": \"OPERATION_FAILED\", \"message\": \"Backend exited with status 2; check connectivity, privileges and server logs\"}}\n",
+      "stderr": ""
+    },
+    {
+      "database": "postgres",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "--timeout",
+        "120",
+        "--timeout",
+        "120",
+        "cluster",
+        "--controller",
+        "opentenbase_ctl",
+        "--config",
+        "/data/opentenbase/opentenbase_ctl/opentenbase_config.ini",
+        "start",
+        "--apply"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"cluster\", \"mode\": \"apply\", \"data\": {\"output\": \"\\nStart executing start node... \\n\\nStart node gtm0002(10.206.0.102) Success \\nStart node gtm0001(10.206.0.101) Success \\nStart node dn0001(10.206.0.102) Success \\nStart node dn0002(10.206.0.102) Success \\nStart node cn0001(10.206.0.102) Success \\nStart node cn0001(10.206.0.101) Success \\nStart node dn0001(10.206.0.101) Success \\nStart node dn0002(10.206.0.101) Success \\n\\n[Result] Total: 8, Success: 8, Failed: 0\\n\\n\", \"health_verified\": false, \"note\": \"Command exit status alone does not prove cluster health; inspect monitor output and nodes/status\"}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "postgres",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "--timeout",
+        "120",
+        "cluster",
+        "--controller",
+        "opentenbase_ctl",
+        "--config",
+        "/data/opentenbase/opentenbase_ctl/opentenbase_config.ini",
+        "monitor"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"cluster\", \"mode\": \"read\", \"data\": {\"output\": \"\\n ------------- Instance status -----------  \\nInstance name: opentenbase01\\nVersion: v5.21.8\\n\\n -------------- Node status --------------  \\nNode dn0001(10.206.0.102:11009) is Running \\nNode dn0002(10.206.0.102:11006) is Running \\nNode gtm0002(10.206.0.102:11000) is Running \\nNode dn0002(10.206.0.101:11009) is Running \\nNode cn0001(10.206.0.102:11003) is Running \\nNode gtm0001(10.206.0.101:11000) is Running \\nNode cn0001(10.206.0.101:11003) is Running \\nNode dn0001(10.206.0.101:11006) is Running \\n[Result] Total: 8, Running: 8, Stopped: 0, Unknown: 0\\n\\n ------- Master CN Connection Info -------  \\n[1] cn0001(10.206.0.101)  \\nEnvironment variable: export LD_LIBRARY_PATH=/data/opentenbase/install/opentenbase/5.21.8/lib  && export PATH=/data/opentenbase/install/opentenbase/5.21.8/bin:${PATH} \\nPSQL connection: psql -h 10.206.0.101 -p 11003 -U opentenbase postgres\\n\\n\", \"health_verified\": false, \"note\": \"Command exit status alone does not prove cluster health; inspect monitor output and nodes/status\"}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "skill_lab_20261120",
+      "argv": [
+        "python3",
+        "/tmp/otb_ops.py",
+        "--timeout",
+        "120",
+        "status"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"ok\": true, \"command\": \"status\", \"mode\": \"read\", \"data\": {\"rows\": [{\"database\": \"skill_lab_20261120\", \"username\": \"opentenbase\", \"version\": \"PostgreSQL 10.0 @ OpenTenBase_v5.0 OpenTenBase V5.21 2026-10-11 14:21:51 on aarch64-unknown-linux-gnu, compiled by gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0, 64-bit\", \"in_recovery\": false}]}, \"error\": null}\n",
+      "stderr": ""
+    },
+    {
+      "database": "skill_lab_20261120",
+      "argv": [
+        "psql",
+        "-X",
+        "-w",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-A",
+        "-t",
+        "-c",
+        "SELECT count(*) FROM events;"
+      ],
+      "exit_code": 0,
+      "stdout": "2\n",
+      "stderr": ""
+    }
+  ]
+}

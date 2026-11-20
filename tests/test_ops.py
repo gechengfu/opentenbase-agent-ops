@@ -118,6 +118,18 @@ class OpsTests(unittest.TestCase):
                     self.assertEqual(run.call_args.args[0][-2:], [action, 'all'])
                     self.assertIn(str(path.resolve()), run.call_args.args[0])
 
+    def test_opentenbase_controller(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp)/'cluster.ini'
+            config.write_text('# fixture')
+            with patch.object(ops.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, 'Running', '')) as run:
+                code, data = self.invoke('cluster', 'monitor', '--controller', 'opentenbase_ctl', '--config', str(config))
+                self.assertEqual(code, 0)
+                self.assertEqual(run.call_args.args[0], ['opentenbase_ctl', 'status', '-c', str(config.resolve())])
+                self.assertEqual(run.call_args.kwargs['cwd'], str(config.resolve().parent))
+                self.assertFalse(data['data']['health_verified'])
+        self.assertEqual(self.invoke('cluster', 'monitor', '--config', '/unused')[0], 2)
+
     def test_actual_cli_process_contract(self):
         proc = subprocess.run([sys.executable, str(ROOT/'scripts/otb_ops.py'), 'database-create', '--name', 'example'], capture_output=True, text=True)
         self.assertEqual(proc.returncode, 0)

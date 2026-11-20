@@ -51,6 +51,7 @@ def parser():
     p.add_argument('--version', action='version', version=VERSION)
     p.add_argument('--psql', default='psql', help='OpenTenBase psql executable path')
     p.add_argument('--pgxc-ctl', default='pgxc_ctl')
+    p.add_argument('--opentenbase-ctl', default='opentenbase_ctl')
     p.add_argument('--timeout', type=bounded_int(1, 300), default=30)
     sub = p.add_subparsers(dest='command', required=True, parser_class=Parser)
     for name in ['doctor', 'status', 'nodes', 'roles']:
@@ -70,7 +71,8 @@ def parser():
         command.add_argument('--apply', action='store_true', help='execute the mutation; default is plan only')
     cluster = sub.add_parser('cluster')
     cluster.add_argument('action', choices=['monitor', 'start', 'stop'])
-    cluster.add_argument('--home', required=True)
+    cluster.add_argument('--home', help='required for pgxc_ctl')
+    cluster.add_argument('--controller', choices=['pgxc_ctl', 'opentenbase_ctl'], default='pgxc_ctl')
     cluster.add_argument('--config', required=True)
     cluster.add_argument('--apply', action='store_true')
     logs = sub.add_parser('logs')
@@ -104,14 +106,14 @@ def sql_plan(args):
     raise UsageError('Unknown SQL operation')
 
 
-def run(argv, timeout, sql=False):
+def run(argv, timeout, sql=False, cwd=None):
     env = os.environ.copy()
     if sql:
         env['PGCONNECT_TIMEOUT'] = str(min(timeout, 10))
         # Bound server-side execution as well as waiting in the local process.
         env['PGOPTIONS'] = env.get('PGOPTIONS', '') + ' -c statement_timeout=%d' % (timeout * 1000)
     try:
-        proc = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, env=env)
+        proc = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, env=env, cwd=cwd)
     except FileNotFoundError:
         raise BackendError('Required executable was not found; run doctor or supply its path')
     except subprocess.TimeoutExpired:
@@ -157,14 +159,20 @@ def execute(args):
         return 'read', {'lines': content.decode('utf-8', errors='replace').splitlines()[-args.lines:],
                         'window_truncated': bool(start), 'max_bytes': 1024 * 1024}
     if args.command == 'cluster':
-        home = str(Path(args.home).expanduser().resolve())
+        if args.controller == 'pgxc_ctl' and not args.home:
+            raise UsageError('pgxc_ctl requires --home')
+        home = str(Path(args.home).expanduser().resolve()) if args.home else None
         config = str(Path(args.config).expanduser().resolve())
-        argv = [args.pgxc_ctl, '--home', home, '-c', config, args.action, 'all']
+        if args.controller == 'opentenbase_ctl':
+            action = 'status' if args.action == 'monitor' else args.action
+            argv = [args.opentenbase_ctl, action, '-c', config]
+        else:
+            argv = [args.pgxc_ctl, '--home', home, '-c', config, args.action, 'all']
         if args.action != 'monitor' and not args.apply:
             return 'plan', {'argv': argv, 'scope': 'all configured nodes', 'executed': False}
-        if not Path(config).is_file() or not Path(home).is_dir():
+        if not Path(config).is_file() or (home is not None and not Path(home).is_dir()):
             raise UsageError('Cluster execution requires an existing home directory and trusted configuration file')
-        output = run(argv, args.timeout)
+        output = run(argv, args.timeout, cwd=str(Path(config).parent) if args.controller == 'opentenbase_ctl' else None)
         return 'read' if args.action == 'monitor' else 'apply', {
             'output': output, 'health_verified': False,
             'note': 'Command exit status alone does not prove cluster health; inspect monitor output and nodes/status'}
