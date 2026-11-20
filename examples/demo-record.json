@@ -1,0 +1,172 @@
+{
+  "generated_at": "2026-11-20T09:27:23.073819+00:00",
+  "python": "3.14.0",
+  "live_database_tested": false,
+  "steps": [
+    {
+      "verification": "local environment diagnosis",
+      "args": [
+        "doctor"
+      ],
+      "exit_code": 0,
+      "output": {
+        "ok": true,
+        "command": "doctor",
+        "mode": "read",
+        "data": {
+          "executables": {
+            "psql": null,
+            "pgxc_ctl": null
+          },
+          "sql_ready": false,
+          "cluster_control_ready": false,
+          "connection_variables_set": []
+        },
+        "error": null
+      }
+    },
+    {
+      "verification": "plan only; no database created",
+      "args": [
+        "database-create",
+        "--name",
+        "course_demo"
+      ],
+      "exit_code": 0,
+      "output": {
+        "ok": true,
+        "command": "database-create",
+        "mode": "plan",
+        "data": {
+          "sql": "CREATE DATABASE \"course_demo\";",
+          "executed": false
+        },
+        "error": null
+      }
+    },
+    {
+      "verification": "plan only; no table created",
+      "args": [
+        "table-create",
+        "--name",
+        "events",
+        "--column",
+        "id:bigint",
+        "--column",
+        "payload:text",
+        "--shard-key",
+        "id"
+      ],
+      "exit_code": 0,
+      "output": {
+        "ok": true,
+        "command": "table-create",
+        "mode": "plan",
+        "data": {
+          "sql": "CREATE TABLE \"public\".\"events\" (\"id\" bigint, \"payload\" text) DISTRIBUTE BY SHARD (\"id\");",
+          "executed": false
+        },
+        "error": null
+      }
+    },
+    {
+      "verification": "plan only; no privileges changed",
+      "args": [
+        "grant-select",
+        "--table",
+        "events",
+        "--role",
+        "reader"
+      ],
+      "exit_code": 0,
+      "output": {
+        "ok": true,
+        "command": "grant-select",
+        "mode": "plan",
+        "data": {
+          "sql": "GRANT SELECT ON TABLE \"public\".\"events\" TO \"reader\";",
+          "executed": false
+        },
+        "error": null
+      }
+    },
+    {
+      "verification": "plan only; no cluster stopped",
+      "args": [
+        "cluster",
+        "stop",
+        "--home",
+        "/example/admin",
+        "--config",
+        "/example/pgxc_ctl.conf"
+      ],
+      "exit_code": 0,
+      "output": {
+        "ok": true,
+        "command": "cluster",
+        "mode": "plan",
+        "data": {
+          "argv": [
+            "pgxc_ctl",
+            "--home",
+            "/example/admin",
+            "-c",
+            "/example/pgxc_ctl.conf",
+            "stop",
+            "all"
+          ],
+          "scope": "all configured nodes",
+          "executed": false
+        },
+        "error": null
+      }
+    },
+    {
+      "verification": "read local synthetic log fixture",
+      "args": [
+        "logs",
+        "--file",
+        "<temporary-log>",
+        "--lines",
+        "1"
+      ],
+      "exit_code": 0,
+      "output": {
+        "ok": true,
+        "command": "logs",
+        "mode": "read",
+        "data": {
+          "lines": [
+            "fixture: checkpoint complete"
+          ],
+          "window_truncated": false,
+          "max_bytes": 1048576
+        },
+        "error": null
+      }
+    },
+    {
+      "verification": "reject invalid input",
+      "args": [
+        "table-create",
+        "--name",
+        "events",
+        "--column",
+        "id:bigint",
+        "--shard-key",
+        "missing"
+      ],
+      "exit_code": 2,
+      "output": {
+        "ok": false,
+        "command": "table-create",
+        "mode": null,
+        "data": null,
+        "error": {
+          "code": "INVALID_ARGUMENT",
+          "message": "Shard key must name a declared column"
+        }
+      }
+    }
+  ]
+}

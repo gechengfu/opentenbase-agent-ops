@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpenTenBase Agent Ops result",
+  "type": "object",
+  "required": ["ok", "command", "mode", "data", "error"],
+  "additionalProperties": false,
+  "properties": {
+    "ok": {"type": "boolean"},
+    "command": {"type": ["string", "null"]},
+    "mode": {"enum": ["read", "plan", "apply", null]},
+    "data": {"type": ["object", "null"]},
+    "error": {"oneOf": [{"type": "null"}, {"type": "object", "required": ["code", "message"], "additionalProperties": false, "properties": {"code": {"enum": ["INVALID_ARGUMENT", "OPERATION_FAILED"]}, "message": {"type": "string"}}}]}
+  },
+  "allOf": [
+    {"if": {"properties": {"ok": {"const": true}}}, "then": {"properties": {"mode": {"enum": ["read", "plan", "apply"]}, "data": {"type": "object"}, "error": {"type": "null"}}}, "else": {"properties": {"mode": {"type": "null"}, "data": {"type": "null"}, "error": {"type": "object"}}}}
+  ]
+}

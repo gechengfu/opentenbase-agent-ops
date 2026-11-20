@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "opentenbase-agent-ops"
+version = "1.0.0"
+description = "Structured OpenTenBase operations CLI and Agent skill"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "Gecheng Fu"}]
+[project.scripts]
+otb-ops = "otb_ops:main"
+[tool.setuptools]
+py-modules = ["otb_ops"]
+package-dir = {"" = "scripts"}

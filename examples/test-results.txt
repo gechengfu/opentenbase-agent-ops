@@ -1,0 +1,16 @@
+test_actual_backend_process_with_fixture (test_ops.OpsTests.test_actual_backend_process_with_fixture) ... ok
+test_actual_cli_process_contract (test_ops.OpsTests.test_actual_cli_process_contract) ... ok
+test_apply_invokes_exactly_once (test_ops.OpsTests.test_apply_invokes_exactly_once) ... ok
+test_bad_backend_json (test_ops.OpsTests.test_bad_backend_json) ... ok
+test_cluster_monitor_does_not_claim_health (test_ops.OpsTests.test_cluster_monitor_does_not_claim_health) ... ok
+test_failure_and_timeout_do_not_leak_stderr (test_ops.OpsTests.test_failure_and_timeout_do_not_leak_stderr) ... ok
+test_invalid_columns_and_names_fail_without_backend (test_ops.OpsTests.test_invalid_columns_and_names_fail_without_backend) ... ok
+test_log_tail_and_bound (test_ops.OpsTests.test_log_tail_and_bound) ... ok
+test_plans_never_launch_a_process (test_ops.OpsTests.test_plans_never_launch_a_process) ... ok
+test_quoted_identifier_cannot_end_the_statement (test_ops.OpsTests.test_quoted_identifier_cannot_end_the_statement) ... ok
+test_read_commands_decode_json (test_ops.OpsTests.test_read_commands_decode_json) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.447s
+
+OK
